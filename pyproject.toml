@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcp-agent"
+version = "0.2.0"
+description = "通用 MCP Agent 框架：Flask 服务外壳 + LangChain 智能内核 + 多模态能力层（TTS / 数字人 / 接口平台）"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "mcp-agent contributors" }]
+keywords = ["mcp", "agent", "langchain", "flask", "llm", "tools", "tts", "digital-human", "dify"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Framework :: Flask",
+]
+dependencies = [
+    "flask>=3.0",
+    "flask-sock>=0.7",
+    "mcp>=2.0",
+    "langchain>=1.0",
+    "langchain-classic>=1.0",
+    "langchain-core>=1.0",
+    "langchain-openai>=1.0",
+    "pydantic>=2.7",
+    "python-dotenv>=1.0",
+    "edge-tts>=7.3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+mcp-agent = "mcp_agent.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["mcp_agent*"]
+
+[tool.setuptools.package-data]
+mcp_agent = [
+    "server/web/templates/*.html",
+    "server/web/static/*.css",
+    "server/web/static/*.js",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

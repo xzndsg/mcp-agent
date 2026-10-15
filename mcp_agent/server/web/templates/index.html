@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mcp-agent 控制台</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">mcp-agent</div>
+    <div class="runtime" id="runtime-info">运行时加载中…</div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="chat">对话</button>
+    <button class="tab" data-tab="human">数字人</button>
+    <button class="tab" data-tab="voice">语音</button>
+    <button class="tab" data-tab="platform">平台接口</button>
+    <button class="tab" data-tab="servers">MCP 服务器</button>
+    <button class="tab" data-tab="tools">工具</button>
+  </nav>
+
+  <main>
+    <!-- 对话 -->
+    <section id="tab-chat" class="panel active">
+      <div id="chat-box" class="chat-box"></div>
+      <div class="chat-input">
+        <input id="chat-message" type="text" placeholder="输入消息，Enter 发送（SSE 流式）" autocomplete="off">
+        <button id="chat-send">发送</button>
+        <button id="chat-clear" class="secondary">新会话</button>
+      </div>
+    </section>
+
+    <!-- 数字人 -->
+    <section id="tab-human" class="panel">
+      <div class="human-layout">
+        <div>
+          <div id="human-stage" class="human-stage">
+            <div id="human-sway" class="sway-layer">
+              <img id="human-avatar" class="hidden" alt="数字人形象">
+            </div>
+            <div id="human-eyelid" class="eyelid"></div>
+            <div id="human-placeholder" class="human-placeholder">
+              暂无形象图<br><small>在右侧上传一张人物照片<br>即可获得一个会呼吸·会眨眼·会说话的数字人</small>
+            </div>
+          </div>
+          <div id="human-status" class="human-status">待机中</div>
+        </div>
+        <div class="human-controls">
+          <h2>形象与动画</h2>
+          <label class="file-btn">上传形象图（png / jpg / gif）
+            <input id="human-image" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+          </label>
+          <label>呼吸周期 <span id="breath-val" class="param-val">3.0s</span>
+            <input id="breath-speed" type="range" min="1" max="6" step="0.5" value="3">
+          </label>
+          <label>摆动幅度 <span id="swing-val" class="param-val">2deg</span>
+            <input id="swing-amplitude" type="range" min="0" max="6" step="0.5" value="2">
+          </label>
+          <label class="checkbox"><input id="human-blink" type="checkbox" checked> 眨眼动画</label>
+          <h2>让数字人说话</h2>
+          <textarea id="human-text" rows="3" placeholder="输入要让数字人说的话，将自动合成语音并驱动形象…"></textarea>
+          <div class="row">
+            <select id="human-voice" class="grow"></select>
+            <button id="human-speak">开口说话</button>
+          </div>
+          <p class="hint">原理：Edge-TTS 合成音频 + WebAudio 振幅实时驱动形象摆动（零 GPU）。升级为 SadTalker 等真渲染只需替换 provider。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 语音 -->
+    <section id="tab-voice" class="panel">
+      <h2>语音合成（TTS）</h2>
+      <textarea id="tts-text" rows="4" placeholder="输入要合成的文本…"></textarea>
+      <div class="row" style="margin-top:8px">
+        <select id="tts-voice" class="grow"></select>
+        <select id="tts-rate">
+          <option value="+0%">常速</option>
+          <option value="+20%">快 20%</option>
+          <option value="-20%">慢 20%</option>
+        </select>
+        <button id="tts-play">合成试听</button>
+      </div>
+      <audio id="tts-audio" controls class="full"></audio>
+
+      <h2>语音识别（ASR · 浏览器原生）</h2>
+      <p class="hint">使用 Chrome / Edge 内置 Web Speech API。点击麦克风开始说话，识别结果可直接发送到对话页。</p>
+      <div class="row">
+        <button id="asr-start" class="secondary">🎤 开始识别</button>
+        <input id="asr-result" class="grow" placeholder="识别结果…" readonly>
+        <button id="asr-to-chat">发送到对话</button>
+      </div>
+    </section>
+
+    <!-- 平台接口 -->
+    <section id="tab-platform" class="panel">
+      <h2>平台能力（自动发现）</h2>
+      <p class="hint">能力由 <code>capabilities/</code> 层注册，第三方可通过 <code>GET /api/v1/capabilities</code> 动态发现本平台全部多模态能力。</p>
+      <div id="caps-grid" class="caps-grid"></div>
+
+      <h2>OpenAI 兼容接口（Dify / Coze / OpenAI SDK 直接对接）</h2>
+      <pre class="code-block" id="openai-doc"></pre>
+
+      <h2>能力接口清单</h2>
+      <pre class="code-block" id="api-doc"></pre>
+    </section>
+
+    <!-- 服务器 -->
+    <section id="tab-servers" class="panel">
+      <h2>添加 MCP 服务器</h2>
+      <form id="server-form" class="form-grid">
+        <label>名称 <input name="name" placeholder="my-business-mcp" required></label>
+        <label>传输方式
+          <select name="transport" id="transport-select">
+            <option value="streamable-http">streamable-http</option>
+            <option value="sse">sse</option>
+            <option value="stdio">stdio</option>
+          </select>
+        </label>
+        <label class="col-2" id="url-field">URL <input name="url" placeholder="http://127.0.0.1:8100/mcp"></label>
+        <label id="command-field" class="hidden">Command <input name="command" placeholder="python"></label>
+        <label id="args-field" class="hidden col-2">Args（空格分隔）<input name="args" placeholder="examples/echo_mcp_server.py --transport stdio"></label>
+        <label class="col-2">API Key / 请求头（可选，格式 Key: Value，每行一个）
+          <textarea name="headers" rows="2" placeholder="Authorization: Bearer xxx"></textarea>
+        </label>
+        <label class="checkbox"><input type="checkbox" name="autostart"> 启动时自动连接</label>
+        <div class="col-2"><button type="submit">添加并保存</button></div>
+      </form>
+
+      <h2>已配置服务器</h2>
+      <table class="data-table">
+        <thead>
+          <tr><th>名称</th><th>传输</th><th>地址/命令</th><th>状态</th><th>延迟</th><th>工具数</th><th>操作</th></tr>
+        </thead>
+        <tbody id="servers-tbody"></tbody>
+      </table>
+      <pre id="server-error" class="error-box hidden"></pre>
+    </section>
+
+    <!-- 工具 -->
+    <section id="tab-tools" class="panel">
+      <h2>可用工具（跨服聚合）</h2>
+      <table class="data-table">
+        <thead>
+          <tr><th>启用</th><th>工具名</th><th>来源</th><th>描述</th></tr>
+        </thead>
+        <tbody id="tools-tbody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
